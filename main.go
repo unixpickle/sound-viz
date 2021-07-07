@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,8 +15,12 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/nfnt/resize"
 	"github.com/unixpickle/essentials"
 	"github.com/unixpickle/ffmpego"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 )
 
 var ReturnCode = 0
@@ -101,6 +106,7 @@ func main() {
 				img.Set(i+waveLeft, y, waveColor)
 			}
 		}
+		DrawCaption(img, captions[chunkIndex])
 		Must(vw.WriteFrame(img))
 		t += dt
 	}
@@ -174,6 +180,40 @@ func ResampleChunk(samples []float64, numSamples int) []float64 {
 		res[i] = samples[int(math.Round(float64(i)*stride))]
 	}
 	return res
+}
+
+func DrawCaption(img *image.RGBA, caption string) {
+	// tmpImage := image.NewRGBA(image.Rect(0, 0, len(caption)*8, 64))
+	tmpImage := image.NewRGBA(image.Rect(0, 0, len(caption)*7+2, 15))
+	textColor := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+	d := &font.Drawer{
+		Dst:  tmpImage,
+		Src:  image.NewUniform(textColor),
+		Face: basicfont.Face7x13,
+		Dot:  fixed.Point26_6{X: fixed.Int26_6(1 << 6), Y: fixed.Int26_6(14 << 6)},
+	}
+	d.DrawString(caption)
+
+	w := tmpImage.Bounds().Dx()
+	h := tmpImage.Bounds().Dy()
+	scale := math.Min(
+		0.3*float64(img.Bounds().Dy())/float64(h),
+		0.9*float64(img.Bounds().Dx())/float64(w),
+	)
+
+	textImg := resize.Resize(uint(float64(w)*scale), uint(float64(h)*scale),
+		tmpImage, resize.NearestNeighbor)
+
+	x := (img.Bounds().Dx() - textImg.Bounds().Dx()) / 2
+	y := img.Bounds().Dy() / 10
+
+	draw.Draw(
+		img,
+		image.Rect(x, y, x+textImg.Bounds().Dx(), y+textImg.Bounds().Dy()),
+		textImg,
+		textImg.Bounds().Min,
+		draw.Over,
+	)
 }
 
 func Must(err error) {
