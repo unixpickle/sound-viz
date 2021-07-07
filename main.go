@@ -54,6 +54,7 @@ func main() {
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "Flags:")
 		flag.PrintDefaults()
+		os.Exit(1)
 	}
 	flag.Parse()
 
@@ -184,7 +185,7 @@ func ResampleChunk(samples []float64, numSamples int) []float64 {
 
 func DrawCaption(img *image.RGBA, caption string) {
 	// tmpImage := image.NewRGBA(image.Rect(0, 0, len(caption)*8, 64))
-	tmpImage := image.NewRGBA(image.Rect(0, 0, len(caption)*7+2, 15))
+	tmpImage := image.NewRGBA(image.Rect(0, 0, len(caption)*7+2, 18))
 	textColor := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
 	d := &font.Drawer{
 		Dst:  tmpImage,
@@ -205,7 +206,7 @@ func DrawCaption(img *image.RGBA, caption string) {
 		tmpImage, resize.NearestNeighbor)
 
 	x := (img.Bounds().Dx() - textImg.Bounds().Dx()) / 2
-	y := img.Bounds().Dy() / 10
+	y := img.Bounds().Dy()/4 - textImg.Bounds().Dy()/2
 
 	draw.Draw(
 		img,
